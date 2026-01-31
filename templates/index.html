@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>99dress | Infinite Closet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        :root { 
+            --accent: #7c3aed;
+            --surface: #ffffff;
+            --body: #f8fafc;
+        }
+
+        body { 
+            background-color: var(--body); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow: hidden; 
+            color: #0f172a;
+        }
+        
+        /* MODERN GLASS HEADER */
+        .glass-header {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            height: 70px;
+        }
+
+        /* 2026 BUTTONS */
+        .btn-modern {
+            background: #000;
+            color: #fff;
+            border-radius: 18px;
+            font-weight: 600;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-modern:active { transform: scale(0.95); }
+
+        /* VIEW MANAGEMENT */
+        .view { display: none; height: calc(100vh - 160px); overflow-y: auto; }
+        .view.active { display: block; }
+        
+        /* CARD STACK */
+        .card-container { position: relative; width: 100%; height: 70vh; display: flex; justify-content: center; align-items: center; }
+        .card { 
+            position: absolute; width: 92%; max-width: 400px; height: 580px; 
+            background: var(--surface); border-radius: 36px; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+            overflow: hidden; touch-action: none; transition: transform 0.1s ease-out, opacity 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.04);
+        }
+
+        /* SWIPE LABELS */
+        .swipe-label { 
+            position: absolute; top: 10%; padding: 12px 24px; border: 4px solid; border-radius: 20px; 
+            font-weight: 800; opacity: 0; z-index: 50; text-transform: uppercase; pointer-events: none;
+            font-size: 24px;
+        }
+        .label-like { border-color: #10b981; color: #10b981; left: 40px; transform: rotate(-10deg); }
+        .label-nope { border-color: #ef4444; color: #ef4444; right: 40px; transform: rotate(10deg); }
+
+        /* NEU NAVIGATION */
+        .neu-nav {
+            background: var(--surface);
+            height: 90px;
+            border-top: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 20px;
+        }
+        .nav-btn { color: #94a3b8; transition: all 0.2s ease; }
+        .nav-active { color: var(--accent) !important; }
+
+        .glass-box {
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+
+        /* CLOSET MASONRY EFFECT */
+        .closet-item { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <header class="glass-header px-6 flex justify-between items-center z-50 sticky top-0">
+        <div class="flex items-center gap-2">
+            <div class="w-9 h-9 bg-black rounded-xl flex items-center justify-center">
+                <span class="text-white font-black text-xl italic">9</span>
+            </div>
+            <h1 class="font-extrabold text-2xl tracking-tighter">99dress</h1>
+        </div>
+        <div class="flex items-center gap-3">
+            <form action="{% url 'logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                    <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+                </button>
+            </form>
+        </div>
+    </header>
+
+    <main class="flex-grow relative">
+        
+        <div id="matches-view" class="view active">
+            <div id="card-stack" class="card-container">
+                <div id="label-like" class="swipe-label label-like">LIKE</div>
+                <div id="label-nope" class="swipe-label label-nope">NOPE</div>
+            </div>
+            
+            <div id="deck-empty" class="hidden flex flex-col items-center justify-center h-full text-center px-10">
+                <p class="text-slate-400 mb-6 font-semibold italic">End of the runway.</p>
+                <button onclick="location.reload()" class="btn-modern px-10 py-4 shadow-xl shadow-purple-100 bg-purple-600">Explore More</button>
+            </div>
+        </div>
+
+        <div id="search-view" class="view p-6">
+            <div class="bg-slate-100 rounded-2xl p-4 mb-8 flex items-center ring-1 ring-slate-200">
+                <i class="fa-solid fa-magnifying-glass text-slate-400 mr-3"></i>
+                <form method="GET" action="{% url 'home' %}" class="w-full">
+                    <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search brands..." class="bg-transparent outline-none w-full font-medium">
+                </form>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                {% for item in search_results %}
+                <a href="{% url 'item_detail' item.id %}" class="group block">
+                    <div class="rounded-[28px] overflow-hidden aspect-[3/4] mb-3 bg-slate-200">
+                        <img src="{{ item.image.url }}" class="w-full h-full object-cover">
+                    </div>
+                    <p class="text-[10px] font-black uppercase text-purple-500 tracking-widest">{{ item.brand }}</p>
+                    <p class="font-bold text-slate-900">{{ item.name }}</p>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="wishlist-view" class="view p-6">
+            <h2 class="text-2xl font-black mb-6">Favorites</h2>
+            <div class="grid grid-cols-2 gap-4">
+                {% for entry in wishlist_items %}
+                <a href="{% url 'item_detail' entry.item.id %}" class="relative group">
+                    <div class="rounded-[28px] overflow-hidden aspect-square shadow-sm">
+                        <img src="{{ entry.item.image.url }}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="absolute top-3 right-3 w-8 h-8 bg-white/80 backdrop-blur rounded-full flex items-center justify-center text-red-500 shadow-sm">
+                        <i class="fa-solid fa-heart"></i>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="col-span-2 py-20 text-center text-slate-300">No favorites yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="chat-view" class="view bg-white px-6">
+            <h2 class="text-2xl font-black mb-6 mt-4">Inbox</h2>
+            {% for partner in chat_partners %}
+            <a href="{% url 'chat_room' partner.id %}" class="flex items-center gap-4 py-5 border-b border-slate-50">
+                <div class="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center overflow-hidden">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ partner.username }}">
+                </div>
+                <div class="flex-grow">
+                    <p class="font-bold text-slate-900">@{{ partner.username }}</p>
+                    <p class="text-xs text-slate-400">Active conversation</p>
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-200 text-xs"></i>
+            </a>
+            {% endfor %}
+        </div>
+
+        <div id="profile-view" class="view">
+            <div class="p-8 text-center bg-white border-b border-slate-100">
+                <div class="w-24 h-24 rounded-[32px] mx-auto mb-6 overflow-hidden ring-8 ring-slate-50 shadow-lg">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.username }}">
+                </div>
+                <h2 class="text-2xl font-black">@{{ user.username }}</h2>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] mt-2">Personal Closet</p>
+                <button onclick="showView('add-item')" class="btn-modern mt-8 px-10 py-3 text-[10px] uppercase tracking-widest bg-black">New Listing</button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4 p-6" id="my-closet-grid">
+                {% for item in user_items %}
+                <div class="closet-item relative group aspect-[4/5] rounded-[28px] overflow-hidden border border-slate-100 shadow-sm" id="item-card-{{ item.id }}">
+                    <img src="{{ item.image.url }}" class="w-full h-full object-cover">
+                    
+                    <button onclick="deleteMyItem('{{ item.id }}')" 
+                            class="absolute top-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-md rounded-2xl flex items-center justify-center text-red-500 shadow-lg transition-all active:scale-90">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+
+                    <div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/70 to-transparent">
+                        <p class="text-white font-bold text-xs truncate">{{ item.name }}</p>
+                        <p class="text-white/70 text-[10px] font-medium">$ {{ item.price }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="add-item-view" class="view p-8 bg-white">
+            <h2 class="text-2xl font-black mb-8 tracking-tighter">Add to Closet</h2>
+            <form id="uploadForm" class="space-y-6" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="aspect-square rounded-[40px] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center relative overflow-hidden">
+                    <input type="file" name="image" id="fileInput" class="absolute inset-0 opacity-0 cursor-pointer" required onchange="handlePreview(this)">
+                    <img id="imgPreview" class="hidden absolute inset-0 w-full h-full object-cover">
+                    <i class="fa-solid fa-camera-retro text-slate-300 text-3xl"></i>
+                </div>
+                <div class="space-y-4">
+                    <input type="text" name="name" placeholder="Item Name" class="w-full bg-slate-50 rounded-2xl p-4 outline-none font-semibold">
+                    <input type="text" name="brand" placeholder="Brand" class="w-full bg-slate-50 rounded-2xl p-4 outline-none font-semibold">
+                    <input type="number" name="price" placeholder="Price ($)" class="w-full bg-slate-50 rounded-2xl p-4 outline-none font-semibold">
+                </div>
+                <button type="submit" class="w-full py-5 btn-modern bg-purple-600 shadow-2xl shadow-purple-200 uppercase tracking-widest text-xs">Publish Item</button>
+                <button type="button" onclick="showView('profile')" class="w-full text-slate-400 font-bold py-2 text-xs">CANCEL</button>
+            </form>
+        </div>
+    </main>
+
+    <nav class="neu-nav flex justify-around items-center z-50">
+        <button onclick="showView('matches')" class="nav-btn nav-active flex flex-col items-center" data-view="matches">
+            <i class="fa-solid fa-ghost text-xl"></i>
+            <span class="text-[8px] uppercase font-black mt-1">Discover</span>
+        </button>
+        <button onclick="showView('search')" class="nav-btn flex flex-col items-center" data-view="search">
+            <i class="fa-solid fa-magnifying-glass text-xl"></i>
+            <span class="text-[8px] uppercase font-black mt-1">Search</span>
+        </button>
+        <button onclick="showView('wishlist')" class="nav-btn flex flex-col items-center" data-view="wishlist">
+            <i class="fa-solid fa-heart text-xl"></i>
+            <span class="text-[8px] uppercase font-black mt-1">Saved</span>
+        </button>
+        <button onclick="showView('chat')" class="nav-btn flex flex-col items-center" data-view="chat">
+            <i class="fa-solid fa-comment-dots text-xl"></i>
+            <span class="text-[8px] uppercase font-black mt-1">Inbox</span>
+        </button>
+        <button onclick="showView('profile')" class="nav-btn flex flex-col items-center" data-view="profile">
+            <i class="fa-solid fa-user-astronaut text-xl"></i>
+            <span class="text-[8px] uppercase font-black mt-1">Closet</span>
+        </button>
+    </nav>
+
+    <script>
+        const DECK_ITEMS = [{% for item in items %}{ id: {{ item.id }}, name: "{{ item.name }}", brand: "{{ item.brand }}", price: "{{ item.price }}", url: "{{ item.image.url }}", seller: "{{ item.user.username }}" }{% if not forloop.last %},{% endif %}{% endfor %}];
+
+        // 1. VIEW CONTROLLER
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId + '-view').classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('nav-active'));
+            const activeBtn = document.querySelector(`[data-view="${viewId}"]`);
+            if (activeBtn) activeBtn.classList.add('nav-active');
+            
+            const titles = { 'matches': 'Discover', 'search': 'Search', 'wishlist': 'Favorites', 'chat': 'Inbox', 'profile': 'My Closet' };
+            document.getElementById('view-title').innerText = titles[viewId] || '99dress';
+        }
+
+        // 2. DELETE LOGIC
+        async function deleteMyItem(itemId) {
+            if (confirm("Permanently remove this from your closet?")) {
+                const response = await fetch(`/delete-item/${itemId}/`, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    const card = document.getElementById(`item-card-${itemId}`);
+                    card.style.transform = "scale(0.8) rotate(5deg)";
+                    card.style.opacity = "0";
+                    setTimeout(() => card.remove(), 300);
+                }
+            }
+        }
+
+        // 3. SWIPE LOGIC
+        const stack = document.getElementById('card-stack');
+        function initDeck() {
+            if (DECK_ITEMS.length === 0) { document.getElementById('deck-empty').classList.remove('hidden'); return; }
+            DECK_ITEMS.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'card'; card.setAttribute('data-id', item.id);
+                card.style.zIndex = DECK_ITEMS.length - index;
+                card.innerHTML = `
+                    <div class="h-[78%] relative bg-slate-100">
+                        <img src="${item.url}" class="w-full h-full object-cover pointer-events-none">
+                        <div class="absolute bottom-6 left-6 right-6 p-5 glass-box rounded-3xl text-slate-900 shadow-xl border border-white/40">
+                            <p class="text-[10px] font-black uppercase tracking-widest text-purple-600 mb-1">${item.brand}</p>
+                            <h3 class="text-xl font-extrabold tracking-tight">${item.name}</h3>
+                            <p class="font-bold text-sm mt-1">$${item.price}</p>
+                        </div>
+                    </div>
+                    <div class="p-6 flex items-center justify-between h-[22%] bg-white">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-purple-50 flex items-center justify-center overflow-hidden">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=${item.seller}">
+                            </div>
+                            <p class="font-bold text-sm">@${item.seller}</p>
+                        </div>
+                        <a href="/item/${item.id}/" class="btn-modern px-6 py-3 text-[10px] tracking-widest uppercase bg-slate-900">View</a>
+                    </div>
+                `;
+                stack.appendChild(card);
+                setupSwipe(card);
+            });
+        }
+
+        function setupSwipe(card) {
+            let startX = 0, curX = 0;
+            const start = (e) => {
+                startX = e.clientX || e.touches[0].clientX;
+                card.style.transition = 'none';
+                document.onmousemove = document.ontouchmove = (ev) => {
+                    curX = (ev.clientX || ev.touches[0].clientX) - startX;
+                    card.style.transform = `translateX(${curX}px) rotate(${curX/20}deg)`;
+                    document.getElementById('label-like').style.opacity = curX > 50 ? 1 : 0;
+                    document.getElementById('label-nope').style.opacity = curX < -50 ? 1 : 0;
+                };
+                document.onmouseup = document.ontouchend = () => {
+                    document.onmousemove = document.ontouchmove = null;
+                    card.style.transition = 'all 0.6s cubic-bezier(0.23, 1, 0.32, 1)';
+                    if (Math.abs(curX) > 150) {
+                        if (curX > 0) fetch(`/wishlist/toggle/${card.getAttribute('data-id')}/`, { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} });
+                        card.style.transform = `translateX(${curX * 3}px) rotate(${curX/5}deg)`;
+                        card.style.opacity = '0';
+                        setTimeout(() => { card.remove(); if(stack.querySelectorAll('.card').length === 0) document.getElementById('deck-empty').classList.remove('hidden'); }, 400);
+                    } else { card.style.transform = ''; }
+                    document.getElementById('label-like').style.opacity = 0;
+                    document.getElementById('label-nope').style.opacity = 0;
+                };
+            };
+            card.onmousedown = card.ontouchstart = start;
+        }
+
+        // 4. PREVIEW & UPLOAD
+        function handlePreview(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('imgPreview').src = e.target.result;
+                    document.getElementById('imgPreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            await fetch('{% url "upload_item" %}', { method: 'POST', body: formData, headers: {'X-CSRFToken': '{{ csrf_token }}'} });
+            window.location.href = "/?view=profile";
+        };
+
+        window.onload = () => {
+            initDeck();
+            const params = new URLSearchParams(window.location.search);
+            if(params.get('view')) showView(params.get('view'));
+        };
+    </script>
+</body>
+</html>

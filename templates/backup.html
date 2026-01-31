@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>99dresses | Infinite Closet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        :root { --primary: #7c3aed; --bg: #f9fafb; }
+        body { background-color: var(--bg); font-family: 'Inter', sans-serif; overflow: hidden; }
+        
+        /* View Management */
+        .view { display: none; height: calc(100vh - 160px); overflow-y: auto; padding-bottom: 20px; }
+        .view.active { display: block; }
+        
+        /* Swipe Cards */
+        .card-container { position: relative; width: 100%; height: 60vh; display: flex; justify-content: center; align-items: center; }
+        .card { 
+            position: absolute; width: 90%; max-width: 360px; height: 480px; 
+            background: white; border-radius: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+            overflow: hidden; touch-action: none; transition: transform 0.1s ease-out, opacity 0.3s ease; cursor: grab;
+        }
+        
+        .swipe-label { position: absolute; top: 40px; padding: 10px 20px; border: 4px solid; border-radius: 8px; font-weight: 900; opacity: 0; z-index: 20; text-transform: uppercase; pointer-events: none; }
+        .label-like { border-color: var(--primary); color: var(--primary); left: 20px; transform: rotate(-15deg); }
+        .label-nope { border-color: #6b7280; color: #6b7280; right: 20px; transform: rotate(15deg); }
+
+        /* Navigation Styles */
+        .nav-active { color: var(--primary) !important; font-weight: 800; }
+        .nav-active svg { stroke: var(--primary); stroke-width: 3px; }
+        
+        /* Grids */
+        .closet-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 15px; }
+    </style>
+</head>
+<body class="flex flex-col h-screen">
+
+    <header class="px-6 py-4 bg-white border-b flex justify-between items-center z-50 shadow-sm">
+        <div>
+            <p class="text-[10px] uppercase tracking-widest text-purple-500 font-bold">99Dresses</p>
+            <h1 id="view-title" class="text-xl font-extrabold text-gray-900">Matches</h1>
+        </div>
+        <form action="{% url 'logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Logout</button>
+        </form>
+    </header>
+
+    <main class="flex-grow relative">
+        
+        <div id="matches-view" class="view active">
+            <div id="card-stack" class="card-container">
+                <div id="label-like" class="swipe-label label-like">Gimme</div>
+                <div id="label-nope" class="swipe-label label-nope">Pass</div>
+            </div>
+            <div id="deck-empty" class="hidden flex flex-col items-center justify-center h-full text-center px-10">
+                <p class="text-gray-400 mb-4 font-medium">No more styles in your area!</p>
+                <button onclick="location.reload()" class="text-purple-600 font-bold underline">Refresh Deck</button>
+            </div>
+        </div>
+
+        <div id="search-view" class="view p-4">
+            <form method="GET" action="{% url 'home' %}" class="relative mb-6">
+                <input type="text" name="q" value="{{ query|default:'' }}" placeholder="Search brands or items..." 
+                       class="w-full bg-white border border-gray-200 rounded-full py-3 px-12 outline-none focus:border-purple-500 shadow-sm">
+                <svg class="absolute left-4 top-3.5 text-gray-400" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </form>
+            
+            <div class="grid grid-cols-2 gap-3">
+                {% for item in search_results %}
+                <a href="{% url 'item_detail' item.id %}" class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 block transition-transform active:scale-95">
+                    <img src="{{ item.image.url }}" class="w-full h-32 object-cover">
+                    <div class="p-2 text-center">
+                        <p class="text-[9px] font-bold text-purple-500 uppercase tracking-tighter">{{ item.brand }}</p>
+                        <p class="text-xs font-bold text-gray-800 truncate">{{ item.name }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="wishlist-view" class="view p-4">
+            <div class="grid grid-cols-2 gap-3">
+                {% for entry in wishlist_items %}
+                <a href="{% url 'item_detail' entry.item.id %}" class="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 block transition-transform active:scale-95">
+                    <img src="{{ entry.item.image.url }}" class="w-full h-32 object-cover">
+                    <div class="p-2 text-center">
+                        <p class="text-[9px] font-bold text-purple-500 uppercase tracking-tighter">{{ entry.item.brand }}</p>
+                        <p class="text-xs font-bold truncate">{{ entry.item.name }}</p>
+                    </div>
+                </a>
+                {% empty %}
+                <p class="col-span-2 text-center text-gray-400 py-20 text-sm font-medium">Your wishlist is empty. Swipe right to save items!</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="chat-view" class="view bg-white divide-y">
+            {% for partner in chat_partners %}
+            <a href="{% url 'chat_room' partner.id %}" class="p-5 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center font-bold text-purple-600 shadow-sm">
+                    {{ partner.username|slice:":1"|upper }}
+                </div>
+                <div class="flex-grow">
+                    <div class="flex justify-between items-center">
+                        <p class="font-bold text-sm text-gray-900">@{{ partner.username }}</p>
+                        <svg class="text-gray-300" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                    <p class="text-xs text-gray-400 font-medium">Click to view conversation</p>
+                </div>
+            </a>
+            {% empty %}
+            <div class="py-20 text-center px-10">
+                <p class="text-gray-400 text-sm font-medium">No messages yet. Interested in an item? Send a Buy Request!</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div id="profile-view" class="view">
+            <div class="bg-white p-8 border-b text-center shadow-sm">
+                <div class="w-24 h-24 bg-purple-50 rounded-full mx-auto mb-4 border-4 border-white shadow-md overflow-hidden">
+                    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user.username }}">
+                </div>
+                <h2 class="text-lg font-bold">@{{ user.username }}</h2>
+                <button onclick="showView('add-item')" class="mt-4 px-8 py-2.5 bg-purple-600 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-purple-100 active:scale-95 transition-all">Add Item</button>
+            </div>
+            
+            <div class="closet-grid">
+                {% for item in user_items %}
+                <div class="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm relative group">
+                    <img src="{{ item.image.url }}" class="w-full h-32 object-cover">
+                    <div class="p-2 text-center">
+                        <p class="text-xs font-bold truncate">{{ item.name }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div id="add-item-view" class="view p-6 bg-white">
+            <form id="uploadForm" class="space-y-4" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="border-2 border-dashed border-gray-200 rounded-2xl h-60 flex flex-col items-center justify-center relative bg-gray-50 overflow-hidden">
+                    <input type="file" name="image" id="fileInput" class="absolute inset-0 opacity-0 cursor-pointer" required onchange="handlePreview(this)">
+                    <img id="imgPreview" class="hidden absolute inset-0 w-full h-full object-cover">
+                    <div id="placeholderUI" class="text-center">
+                        <svg class="mx-auto mb-2 text-gray-300" width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Select Photo</p>
+                    </div>
+                </div>
+                <input type="text" name="name" placeholder="Item Name" class="w-full border-b py-3 outline-none focus:border-purple-600 font-medium transition-colors">
+                <input type="text" name="brand" placeholder="Brand" class="w-full border-b py-3 outline-none focus:border-purple-600 font-medium transition-colors">
+                <input type="number" name="price" placeholder="Price ($)" class="w-full border-b py-3 outline-none focus:border-purple-600 font-medium transition-colors">
+                <button type="submit" class="w-full bg-purple-600 text-white py-4 rounded-2xl font-bold uppercase tracking-widest mt-4 shadow-xl shadow-purple-100 active:scale-95 transition-all">Post Item</button>
+                <button type="button" onclick="showView('profile')" class="w-full text-gray-400 text-[10px] font-black uppercase py-4">Cancel</button>
+            </form>
+        </div>
+    </main>
+
+    <nav class="bg-white border-t flex justify-around items-center h-20 pb-4 shadow-[0_-5px_20px_rgba(0,0,0,0.03)] z-50">
+        <button onclick="showView('matches')" class="nav-btn nav-active flex flex-col items-center text-gray-400" data-view="matches">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+            <span class="text-[8px] uppercase font-black mt-1">Match</span>
+        </button>
+        <button onclick="showView('search')" class="nav-btn flex flex-col items-center text-gray-400" data-view="search">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <span class="text-[8px] uppercase font-black mt-1">Search</span>
+        </button>
+        <button onclick="showView('wishlist')" class="nav-btn flex flex-col items-center text-gray-400" data-view="wishlist">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+            <span class="text-[8px] uppercase font-black mt-1">Wishlist</span>
+        </button>
+        <button onclick="showView('chat')" class="nav-btn flex flex-col items-center text-gray-400" data-view="chat">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            <span class="text-[8px] uppercase font-black mt-1">Inbox</span>
+        </button>
+        <button onclick="showView('profile')" class="nav-btn flex flex-col items-center text-gray-400" data-view="profile">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <span class="text-[8px] uppercase font-black mt-1">Closet</span>
+        </button>
+    </nav>
+
+    <script>
+        // 1. DATA INITIALIZATION
+        const DECK_ITEMS = [{% for item in items %}{ id: {{ item.id }}, name: "{{ item.name }}", brand: "{{ item.brand }}", price: "{{ item.price }}", url: "{{ item.image.url }}" }{% if not forloop.last %},{% endif %}{% endfor %}];
+
+        // 2. VIEW CONTROLLER
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(viewId + '-view').classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('nav-active', 'text-purple-600'));
+            const activeBtn = document.querySelector(`[data-view="${viewId}"]`);
+            if (activeBtn) activeBtn.classList.add('nav-active', 'text-purple-600');
+            document.getElementById('view-title').innerText = viewId === 'profile' ? 'My Closet' : viewId.charAt(0).toUpperCase() + viewId.slice(1);
+        }
+
+        // 3. UPLOAD LOGIC
+        function handlePreview(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('imgPreview').src = e.target.result;
+                    document.getElementById('imgPreview').classList.remove('hidden');
+                    document.getElementById('placeholderUI').classList.add('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        document.getElementById('uploadForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            await fetch('{% url "upload_item" %}', { method: 'POST', body: formData, headers: {'X-CSRFToken': '{{ csrf_token }}'} });
+            window.location.href = "/?view=profile";
+        };
+
+        // 4. SWIPE LOGIC
+        const stack = document.getElementById('card-stack');
+        function initDeck() {
+            if (DECK_ITEMS.length === 0) { document.getElementById('deck-empty').classList.remove('hidden'); return; }
+            DECK_ITEMS.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'card'; card.setAttribute('data-id', item.id);
+                card.style.zIndex = DECK_ITEMS.length - index;
+                card.innerHTML = `<img src="${item.url}" class="w-full h-3/4 object-cover pointer-events-none"><div class="p-5 font-bold"><p class="text-purple-500 uppercase text-[10px] tracking-widest">${item.brand}</p><p class="text-sm text-gray-800">${item.name}</p><p class="mt-1 text-gray-900">$${item.price}</p></div>`;
+                stack.appendChild(card);
+                setupSwipe(card);
+            });
+        }
+
+        function setupSwipe(card) {
+            let startX = 0, curX = 0, startTime = 0;
+            const start = (e) => {
+                startX = e.clientX || e.touches[0].clientX; startTime = new Date().getTime();
+                card.style.transition = 'none';
+                document.onmousemove = document.ontouchmove = (ev) => {
+                    curX = (ev.clientX || ev.touches[0].clientX) - startX;
+                    card.style.transform = `translateX(${curX}px) rotate(${curX/20}deg)`;
+                    document.getElementById('label-like').style.opacity = curX > 50 ? 1 : 0;
+                    document.getElementById('label-nope').style.opacity = curX < -50 ? 1 : 0;
+                };
+                document.onmouseup = document.ontouchend = () => {
+                    document.onmousemove = document.ontouchmove = null;
+                    const duration = new Date().getTime() - startTime;
+                    if (Math.abs(curX) < 10 && duration < 200) { window.location.href = `/item/${card.getAttribute('data-id')}/`; return; }
+                    card.style.transition = 'all 0.5s cubic-bezier(0.23, 1, 0.32, 1)';
+                    if (Math.abs(curX) > 140) {
+                        if (curX > 0) fetch(`/wishlist/toggle/${card.getAttribute('data-id')}/`, { method: 'POST', headers: {'X-CSRFToken': '{{ csrf_token }}'} });
+                        card.style.transform = `translateX(${curX * 5}px) rotate(${curX/5}deg)`;
+                        card.style.opacity = '0';
+                        setTimeout(() => { card.remove(); if(stack.children.length === 2) document.getElementById('deck-empty').classList.remove('hidden'); }, 500);
+                    } else { card.style.transform = ''; }
+                    document.getElementById('label-like').style.opacity = 0;
+                    document.getElementById('label-nope').style.opacity = 0;
+                };
+            };
+            card.onmousedown = card.ontouchstart = start;
+        }
+
+        window.onload = () => {
+            initDeck();
+            const params = new URLSearchParams(window.location.search);
+            if(params.get('view')) showView(params.get('view'));
+            if(params.has('q')) showView('search');
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | 99dress</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        
+        :root { 
+            --accent: #7c3aed;
+            --body: #f8fafc;
+        }
+
+        body { 
+            background-color: var(--body); 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            color: #0f172a;
+        }
+
+        /* 2026 Modern Inputs */
+        input {
+            width: 100%;
+            background-color: #f1f5f9; /* slate-100 */
+            border: 2px solid transparent;
+            border-radius: 20px;
+            padding: 16px 20px;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            background-color: #ffffff;
+            border-color: var(--accent);
+            box-shadow: 0 10px 20px -10px rgba(124, 58, 237, 0.3);
+        }
+
+        .btn-modern {
+            background: #000;
+            color: #fff;
+            border-radius: 20px;
+            font-weight: 700;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-modern:active {
+            transform: scale(0.96);
+        }
+
+        .errorlist {
+            color: #ef4444;
+            font-size: 12px;
+            font-weight: 600;
+            list-style: none;
+            padding: 0;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6">
+
+    <div class="max-w-md w-full">
+        <div class="flex flex-col items-center mb-12">
+            <div class="w-14 h-14 bg-black rounded-2xl flex items-center justify-center mb-4 shadow-2xl shadow-purple-200">
+                <span class="text-white font-black text-2xl italic">9</span>
+            </div>
+            <h1 class="text-3xl font-black tracking-tighter">99dress</h1>
+            <p class="text-slate-400 font-medium mt-2">Enter your closet</p>
+        </div>
+
+        <div class="bg-white p-8 rounded-[40px] shadow-2xl shadow-slate-200/50 border border-slate-50">
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                {% for field in form %}
+                    <div class="flex flex-col gap-2">
+                        <label for="{{ field.id_for_label }}" class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-2">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                            {{ field.errors }}
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn-modern w-full py-5 mt-4">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="mt-8 text-center">
+                <p class="text-sm text-slate-500 font-medium">
+                    New to the community? 
+                    <a href="{% url 'register' %}" class="text-purple-600 font-extrabold hover:underline ml-1">Join now</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-12 text-center">
+            <p class="text-[10px] text-slate-300 font-bold uppercase tracking-[0.3em]">Infinite Style &copy; 2026</p>
+        </div>
+    </div>
+
+</body>
+</html>

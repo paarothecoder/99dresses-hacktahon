@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with {{ partner.username }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 h-screen flex flex-col max-w-md mx-auto shadow-2xl">
+    
+    <header class="p-4 bg-white border-b flex items-center gap-4 sticky top-0 z-10">
+        <a href="{% url 'home' %}?view=chat" class="p-2 bg-gray-100 rounded-full text-purple-600">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        <div>
+            <h1 class="font-bold text-gray-900 leading-none">@{{ partner.username }}</h1>
+            <p class="text-[10px] text-green-500 font-bold uppercase mt-1 tracking-tighter">Online</p>
+        </div>
+    </header>
+
+    <div id="chat-box" class="flex-grow p-4 overflow-y-auto flex flex-col gap-3">
+        {% for msg in messages %}
+        <div class="max-w-[80%] p-3 rounded-2xl text-sm shadow-sm 
+            {% if msg.sender == request.user %} 
+                self-end bg-purple-600 text-white rounded-br-none 
+            {% else %} 
+                self-start bg-white text-gray-800 rounded-bl-none 
+            {% endif %}">
+            {{ msg.content }}
+            <p class="text-[8px] opacity-50 mt-1 {% if msg.sender == request.user %} text-right {% endif %}">
+                {{ msg.timestamp|date:"H:i" }}
+            </p>
+        </div>
+        {% empty %}
+        <div class="py-20 text-center text-gray-400 text-xs">No messages yet. Say hi!</div>
+        {% endfor %}
+    </div>
+
+    <form method="POST" class="p-4 bg-white border-t flex gap-2 pb-8">
+        {% csrf_token %}
+        <input name="content" type="text" placeholder="Type a message..." required autocomplete="off"
+               class="flex-grow bg-gray-100 rounded-full px-5 py-3 outline-none focus:ring-2 ring-purple-500 transition-all font-medium text-sm">
+        <button type="submit" class="bg-purple-600 text-white p-3 rounded-full font-bold shadow-lg shadow-purple-100 active:scale-95 transition-all">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+    </form>
+
+    <script>
+        // Auto-scroll to bottom of chat
+        const chatBox = document.getElementById('chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
+    </script>
+</body>
+</html>

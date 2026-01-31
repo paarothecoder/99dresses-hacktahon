@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ item.name }} | 99dresses</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-lg relative pb-20">
+        <a href="{% url 'home' %}" class="absolute top-6 left-6 z-10 bg-white/80 backdrop-blur-md p-2 rounded-full shadow-md">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+        </a>
+        
+        <div class="h-[60vh] w-full bg-gray-200">
+            <img src="{{ item.image.url }}" class="w-full h-full object-cover">
+        </div>
+
+        <div class="p-8 -mt-8 bg-white rounded-t-[32px] relative shadow-2xl">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-purple-600 font-bold uppercase tracking-widest text-[10px]">{{ item.brand }}</p>
+                    <h1 class="text-2xl font-extrabold text-gray-900">{{ item.name }}</h1>
+                </div>
+                <div class="text-2xl font-black text-gray-900">${{ item.price }}</div>
+            </div>
+
+            <div class="flex items-center gap-3 py-4 border-y border-gray-100 mb-6">
+                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center font-bold text-purple-600">
+                    {{ item.user.username|slice:":1"|upper }}
+                </div>
+                <p class="text-sm font-medium text-gray-500 font-medium tracking-tight">Listed by <span class="text-gray-900 font-bold">@{{ item.user.username }}</span></p>
+            </div>
+
+            {% if item.user != request.user %}
+            <a href="{% url 'start_buy_chat' item.id %}" class="w-full bg-purple-600 text-white py-4 rounded-2xl font-bold block text-center uppercase tracking-widest shadow-xl shadow-purple-100 active:scale-95 transition-all">
+                Chat with Seller
+            </a>
+            {% else %}
+            <button disabled class="w-full bg-gray-200 text-gray-400 py-4 rounded-2xl font-bold uppercase tracking-widest cursor-not-allowed">
+                Your Listing
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
