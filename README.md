@@ -76,8 +76,6 @@ Example UI preview:
 - Listings and profile views
 - Wishlist and matching screens
 
-(Add screenshots inside a `/screenshots` folder and reference them here)
+(screenshots inside a `/screenshots` folder and reference them here)
 
-Example:
-```markdown
 ![Home Screen](ss/ss1.png)
